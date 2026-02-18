@@ -1,0 +1,112 @@
+// redis — Redis client for Wyn
+// Pure Wyn implementation using TCP sockets and RESP protocol.
+// No C library dependency.
+//
+// Usage:
+//   var r = Redis.connect("localhost", 6379)
+//   Redis.set(r, "name", "Alice")
+//   var val = Redis.get(r, "name")       // "Alice"
+//   Redis.del(r, "name")
+//   Redis.incr(r, "counter")
+//   Redis.expire(r, "key", 60)
+//   var keys = Redis.keys(r, "user:*")
+//   Redis.close(r)
+
+// RESP protocol encoder
+fn resp_cmd1(cmd: string) -> string {
+    return "*1\r\n$" + int_to_string(cmd.len()) + "\r\n" + cmd + "\r\n"
+}
+
+fn resp_cmd2(cmd: string, arg1: string) -> string {
+    return "*2\r\n$" + int_to_string(cmd.len()) + "\r\n" + cmd + "\r\n$" + int_to_string(arg1.len()) + "\r\n" + arg1 + "\r\n"
+}
+
+fn resp_cmd3(cmd: string, arg1: string, arg2: string) -> string {
+    return "*3\r\n$" + int_to_string(cmd.len()) + "\r\n" + cmd + "\r\n$" + int_to_string(arg1.len()) + "\r\n" + arg1 + "\r\n$" + int_to_string(arg2.len()) + "\r\n" + arg2 + "\r\n"
+}
+
+// Parse RESP response — extract the value
+fn resp_parse(raw: string) -> string {
+    if raw.len() == 0 { return "" }
+    var first = raw[0]
+    // +OK\r\n → "OK"
+    if first == "+" { return raw.substring(1, raw.len() - 2) }
+    // -ERR message\r\n → "ERR message"
+    if first == "-" { return raw.substring(1, raw.len() - 2) }
+    // :42\r\n → "42"
+    if first == ":" { return raw.substring(1, raw.len() - 2) }
+    // $N\r\ndata\r\n → "data"
+    if first == "$" {
+        if raw[1] == "-" { return "" }  // $-1 = nil
+        var nl = 0
+        var i = 1
+        while i < raw.len() && raw[i] != "\r" { i += 1 }
+        // Data starts after \r\n
+        var start = i + 2
+        // Find end
+        var end = start
+        while end < raw.len() && raw[end] != "\r" { end += 1 }
+        return raw.substring(start, end)
+    }
+    // *N\r\n... → return raw for now
+    return raw
+}
+
+// Connect to Redis
+fn Redis_connect(host: string, port: int) -> int {
+    return Net.connect(host, port)
+}
+
+// SET key value
+fn Redis_set(conn: int, key: string, value: string) -> string {
+    Net.send(conn, resp_cmd3("SET", key, value))
+    var resp = Net.recv(conn)
+    return resp_parse(resp)
+}
+
+// GET key
+fn Redis_get(conn: int, key: string) -> string {
+    Net.send(conn, resp_cmd2("GET", key))
+    var resp = Net.recv(conn)
+    return resp_parse(resp)
+}
+
+// DEL key
+fn Redis_del(conn: int, key: string) -> string {
+    Net.send(conn, resp_cmd2("DEL", key))
+    var resp = Net.recv(conn)
+    return resp_parse(resp)
+}
+
+// INCR key
+fn Redis_incr(conn: int, key: string) -> string {
+    Net.send(conn, resp_cmd2("INCR", key))
+    var resp = Net.recv(conn)
+    return resp_parse(resp)
+}
+
+// EXPIRE key seconds
+fn Redis_expire(conn: int, key: string, seconds: int) -> string {
+    Net.send(conn, resp_cmd3("EXPIRE", key, int_to_string(seconds)))
+    var resp = Net.recv(conn)
+    return resp_parse(resp)
+}
+
+// PING
+fn Redis_ping(conn: int) -> string {
+    Net.send(conn, resp_cmd1("PING"))
+    var resp = Net.recv(conn)
+    return resp_parse(resp)
+}
+
+// KEYS pattern
+fn Redis_keys(conn: int, pattern: string) -> string {
+    Net.send(conn, resp_cmd2("KEYS", pattern))
+    var resp = Net.recv(conn)
+    return resp
+}
+
+// Close connection
+fn Redis_close(conn: int) {
+    Net.close(conn)
+}
