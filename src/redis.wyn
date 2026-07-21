@@ -1,4 +1,4 @@
-// redis — Redis client for Wyn
+// redis - Redis client for Wyn
 // Pure Wyn implementation using TCP sockets and RESP protocol.
 // No C library dependency.
 //
@@ -25,7 +25,7 @@ fn resp_cmd3(cmd: string, arg1: string, arg2: string) -> string {
     return "*3\r\n$" + int_to_string(cmd.len()) + "\r\n" + cmd + "\r\n$" + int_to_string(arg1.len()) + "\r\n" + arg1 + "\r\n$" + int_to_string(arg2.len()) + "\r\n" + arg2 + "\r\n"
 }
 
-// Parse RESP response — extract the value
+// Parse RESP response - extract the value
 fn resp_parse(raw: string) -> string {
     if raw.len() == 0 { return "" }
     var first = raw[0]

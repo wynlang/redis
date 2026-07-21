@@ -1,4 +1,4 @@
-// Redis package tests — RESP protocol (no server needed)
+// Redis package tests - RESP protocol (no server needed)
 
 fn resp_cmd1(cmd: string) -> string {
     return "*1\r\n$" + int_to_string(cmd.len()) + "\r\n" + cmd + "\r\n"

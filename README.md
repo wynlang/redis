@@ -1,4 +1,4 @@
-# redis — Official Wyn Package
+# redis - Official Wyn Package
 
 Redis client for Wyn. Pure Wyn implementation using TCP sockets and RESP protocol. No C library dependency.
 
