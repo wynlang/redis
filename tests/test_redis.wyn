@@ -1,72 +1,40 @@
-// Redis package tests - RESP protocol (no server needed)
-
-fn resp_cmd1(cmd: string) -> string {
-    return "*1\r\n$" + int_to_string(cmd.len()) + "\r\n" + cmd + "\r\n"
-}
-
-fn resp_cmd2(cmd: string, arg1: string) -> string {
-    return "*2\r\n$" + int_to_string(cmd.len()) + "\r\n" + cmd + "\r\n$" + int_to_string(arg1.len()) + "\r\n" + arg1 + "\r\n"
-}
-
-fn resp_cmd3(cmd: string, arg1: string, arg2: string) -> string {
-    return "*3\r\n$" + int_to_string(cmd.len()) + "\r\n" + cmd + "\r\n$" + int_to_string(arg1.len()) + "\r\n" + arg1 + "\r\n$" + int_to_string(arg2.len()) + "\r\n" + arg2 + "\r\n"
-}
-
-fn resp_parse(raw: string) -> string {
-    if raw.len() == 0 { return "" }
-    var first = raw[0]
-    if first == "+" { return raw.substring(1, raw.len() - 2) }
-    if first == "-" { return raw.substring(1, raw.len() - 2) }
-    if first == ":" { return raw.substring(1, raw.len() - 2) }
-    if first == "$" {
-        // Find \r\n after length
-        var len_str = ""
-        var i = 1
-        while i < raw.len() - 1 {
-            if raw[i] == "\r" { break }
-            len_str = len_str + raw[i]
-            i = i + 1
-        }
-        if len_str == "-1" { return "" }
-        var data_start = i + 2
-        var data_len = len_str.to_int()
-        return raw.substring(data_start, data_start + data_len)
-    }
-    return raw
-}
+// Redis package tests - RESP protocol (no server needed).
+// These exercise the SHIPPED library in src/redis.wyn (resolved via the
+// tests/redis.wyn -> ../src/redis.wyn symlink), so a broken lib fails the tests.
+import redis
 
 test "encode PING" {
-    assert_eq(resp_cmd1("PING"), "*1\r\n$4\r\nPING\r\n")
+    assert_eq(redis.resp_cmd1("PING"), "*1\r\n$4\r\nPING\r\n")
 }
 
 test "encode GET" {
-    assert_eq(resp_cmd2("GET", "key"), "*2\r\n$3\r\nGET\r\n$3\r\nkey\r\n")
+    assert_eq(redis.resp_cmd2("GET", "key"), "*2\r\n$3\r\nGET\r\n$3\r\nkey\r\n")
 }
 
 test "encode SET" {
-    assert_eq(resp_cmd3("SET", "k", "v"), "*3\r\n$3\r\nSET\r\n$1\r\nk\r\n$1\r\nv\r\n")
+    assert_eq(redis.resp_cmd3("SET", "k", "v"), "*3\r\n$3\r\nSET\r\n$1\r\nk\r\n$1\r\nv\r\n")
 }
 
 test "parse +OK" {
-    assert_eq(resp_parse("+OK\r\n"), "OK")
+    assert_eq(redis.resp_parse("+OK\r\n"), "OK")
 }
 
 test "parse :42" {
-    assert_eq(resp_parse(":42\r\n"), "42")
+    assert_eq(redis.resp_parse(":42\r\n"), "42")
 }
 
 test "parse error" {
-    assert_eq(resp_parse("-ERR unknown\r\n"), "ERR unknown")
+    assert_eq(redis.resp_parse("-ERR unknown\r\n"), "ERR unknown")
 }
 
 test "parse bulk string" {
-    assert_eq(resp_parse("$5\r\nhello\r\n"), "hello")
+    assert_eq(redis.resp_parse("$5\r\nhello\r\n"), "hello")
 }
 
 test "parse nil" {
-    assert_eq(resp_parse("$-1\r\n"), "")
+    assert_eq(redis.resp_parse("$-1\r\n"), "")
 }
 
 test "parse empty" {
-    assert_eq(resp_parse(""), "")
+    assert_eq(redis.resp_parse(""), "")
 }
