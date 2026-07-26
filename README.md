@@ -11,14 +11,17 @@ wyn pkg install github.com/wynlang/redis
 ## Usage
 
 ```wyn
-var r = Redis_connect("localhost", 6379)
-Redis_set(r, "name", "Alice")
-var val = Redis_get(r, "name")     // "Alice"
-Redis_del(r, "name")
-Redis_incr(r, "counter")
-Redis_expire(r, "key", 60)
-Redis_ping(r)                       // "PONG"
-Redis_close(r)
+import redis
+
+var r = redis.Redis_connect("localhost", 6379)
+redis.Redis_set(r, "name", "Alice")
+var val = redis.Redis_get(r, "name")   // "Alice"
+print(val)
+redis.Redis_del(r, "name")
+redis.Redis_incr(r, "counter")
+redis.Redis_expire(r, "counter", 60)
+print(redis.Redis_ping(r))             // PONG
+redis.Redis_close(r)
 ```
 
 ## API
